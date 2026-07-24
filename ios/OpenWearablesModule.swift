@@ -119,7 +119,9 @@ public class OpenWearablesModule: Module {
         // MARK: - Providers (not implemented in iOS SDK)        
         Function("getAvailableProviders") { return [] }
         
-        Function("setProvider") { }
+        Function("setProvider") { (providerId: String) in 
+            return true 
+        }
 
         // MARK: - Logs
         Function("setLogLevel") { (levelId: Int) in

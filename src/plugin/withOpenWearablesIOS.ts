@@ -15,7 +15,7 @@ const withOpenWearablesIOS: ConfigPlugin<OpenWearablesIOSPluginProps> = (
 ) => {
   const {
     healthShareUsage = "Allow access to your health data.",
-    healthUpdateUsage = "Allow updates to your health data.",
+    healthUpdateUsage = "",
   } = options;
 
   // Add HealthKit entitlements
@@ -29,7 +29,11 @@ const withOpenWearablesIOS: ConfigPlugin<OpenWearablesIOSPluginProps> = (
   // Add Info.plist usage descriptions & BGTask identifiers
   config = withInfoPlist(config, (config) => {
     config.modResults["NSHealthShareUsageDescription"] = healthShareUsage;
-    config.modResults["NSHealthUpdateUsageDescription"] = healthUpdateUsage;
+    if (healthUpdateUsage && healthUpdateUsage.length > 0) {
+      config.modResults["NSHealthUpdateUsageDescription"] = healthUpdateUsage;
+    } else {
+      delete config.modResults["NSHealthUpdateUsageDescription"];
+    }
 
     config.modResults["UIBackgroundModes"] = ["fetch", "processing"];
 

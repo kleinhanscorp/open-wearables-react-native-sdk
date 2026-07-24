@@ -142,8 +142,16 @@ public class OpenWearablesModule : Module() {
       OpenWearablesHealthSDK.getInstance().setProvider(providerId)
     }
     
-    // MARK: - Logs (not implemented in Android SDK)
-    Function("setLogLevel") {  }
+    // MARK: - Logs
+    Function("setLogLevel") { level: Int ->
+      val enumLevel = when (level) {
+        0 -> OWLogLevel.NONE
+        1 -> OWLogLevel.ALWAYS
+        2 -> OWLogLevel.DEBUG
+        else -> OWLogLevel.DEBUG
+      }
+      OpenWearablesHealthSDK.getInstance().logLevel = enumLevel
+    }
 
     Function("getLogLevel") {  }
   }
