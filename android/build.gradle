@@ -23,5 +23,8 @@ repositories {
 }
 
 dependencies {
-    implementation("com.openwearables.health:sdk:0.11.2")
+    // Gutsy fork: the SDK is a sibling submodule consumed as a Gradle project, not a published
+    // artifact (apps/mobile/plugins/withOpenWearables.js wires the include). Upstream pins
+    // com.openwearables.health:sdk:0.11.2 here; our submodule IS 0.11.2 + the auth-recovery patch.
+    implementation project(':open_wearables_android_sdk')
 }

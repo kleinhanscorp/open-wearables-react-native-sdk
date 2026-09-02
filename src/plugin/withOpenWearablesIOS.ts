@@ -15,6 +15,8 @@ const withOpenWearablesIOS: ConfigPlugin<OpenWearablesIOSPluginProps> = (
 ) => {
   const {
     healthShareUsage = "Allow access to your health data.",
+    // Gutsy fork: empty by default. A read-only HealthKit integration must NOT declare
+    // NSHealthUpdateUsageDescription — App Review reads it as a write claim.
     healthUpdateUsage = "",
   } = options;
 

@@ -10,12 +10,12 @@ public class OpenWearablesModule : Module() {
     Name("OpenWearablesHealthSDK")
 
     // MARK: - Callbacks (Events)
-    Events("onLog", "onAuthError")
+    Events("onLog", "onAuthError", "onAuthRecovered", "onAuthStateChanged")
 
     // MARK: - Lifecycle
     OnCreate {
       OpenWearablesHealthSDK.initialize(appContext.reactContext!!)
-      
+
       appContext.activityProvider?.currentActivity?.let { activity ->
         OpenWearablesHealthSDK.getInstance().setActivity(activity)
       }
@@ -37,6 +37,15 @@ public class OpenWearablesModule : Module() {
             "message" to message
           )
         )
+      }
+
+      // Gutsy fork — the native recovery ladder reports back through these two.
+      OpenWearablesHealthSDK.getInstance().authRecoveredListener = { via ->
+        sendEvent("onAuthRecovered", mapOf("via" to via))
+      }
+
+      OpenWearablesHealthSDK.getInstance().authStateListener = { state ->
+        sendEvent("onAuthStateChanged", mapOf("state" to state))
       }
     }
 
@@ -75,7 +84,7 @@ public class OpenWearablesModule : Module() {
       OpenWearablesHealthSDK.getInstance().signOut()
     }
 
-    Function("updateTokens") { accessToken: String, refreshToken: String ->
+    Function("updateTokens") { accessToken: String, refreshToken: String? ->
       OpenWearablesHealthSDK.getInstance().updateTokens(
         accessToken,
         refreshToken
@@ -88,6 +97,23 @@ public class OpenWearablesModule : Module() {
 
     Function("isSessionValid") {
       OpenWearablesHealthSDK.getInstance().isSessionValid()
+    }
+
+    // MARK: - Auth self-healing (Gutsy fork)
+    Function("setRenewalCredential") { url: String, token: String ->
+      OpenWearablesHealthSDK.getInstance().setRenewalCredential(url, token)
+    }
+
+    Function("clearRenewalCredential") {
+      OpenWearablesHealthSDK.getInstance().clearRenewalCredential()
+    }
+
+    Function("getAuthState") {
+      OpenWearablesHealthSDK.getInstance().getAuthState()
+    }
+
+    AsyncFunction("ensureFreshSession") Coroutine { _: Unit? ->
+      return@Coroutine OpenWearablesHealthSDK.getInstance().ensureFreshSession()
     }
 
     // MARK: - Authorization
@@ -150,7 +176,7 @@ public class OpenWearablesModule : Module() {
     Function("setProvider") { providerId: String ->
       OpenWearablesHealthSDK.getInstance().setProvider(providerId)
     }
-    
+
     // MARK: - Logs
     Function("setLogLevel") { levelId: Int ->
       val level = OWLogLevel.entries.getOrElse(levelId) {
@@ -161,6 +187,6 @@ public class OpenWearablesModule : Module() {
 
     Function("getLogLevel") {
       OpenWearablesHealthSDK.getInstance().logLevel.ordinal
-    }    
+    }
   }
 }

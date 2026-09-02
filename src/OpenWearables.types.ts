@@ -1,6 +1,10 @@
 export type OpenWearablesModuleEvents = {
   onLog: (params: LogEventPayload) => void;
   onAuthError: (params: AuthErrorEventPayload) => void;
+  /** Gutsy fork: a broken session was repaired natively (renewal / double-check / host update). */
+  onAuthRecovered: (params: AuthRecoveredEventPayload) => void;
+  /** Gutsy fork: the persisted auth verdict changed. */
+  onAuthStateChanged: (params: AuthStateChangedEventPayload) => void;
 };
 
 export type LogEventPayload = {
@@ -12,6 +16,45 @@ export type AuthErrorEventPayload = {
   message: string;
 };
 
+export type AuthRecoveredEventPayload = {
+  /** "renewal" | "double-check" | "external" — which rung of the ladder repaired the session. */
+  via: string;
+};
+
+export type AuthStateChangedEventPayload = {
+  state: OWAuthState;
+};
+
+/**
+ * The SDK's persisted auth verdict (Gutsy fork).
+ *  - `ok`               the token pair is believed good (or was just repaired)
+ *  - `recovering`       the refresh token was rejected; native renewal is in flight or backing off
+ *  - `reauth_required`  refresh AND renewal are exhausted; only the host can re-vend
+ */
+export type OWAuthState = "ok" | "recovering" | "reauth_required";
+
+/** Snapshot returned by `getAuthState()` — no network, safe to call at launch. */
+export type AuthStateSnapshot = {
+  state: OWAuthState;
+  lastAuthErrorAt: string | null;
+  lastRecoveredAt: string | null;
+  hasRenewalCredential: boolean;
+  renewalFailures: number;
+  /** `exp` of the stored access token, decoded locally. */
+  accessTokenExpiresAt: string | null;
+  hasSession: boolean;
+};
+
+/** Outcome of `ensureFreshSession()` — the host-safe session probe. */
+export type EnsureSessionResult =
+  | "ok"
+  | "refreshed"
+  | "recovered"
+  | "reauth_required"
+  | "network_error"
+  | "no_session"
+  | "api_key";
+
 export enum OWLogLevel {
   None = 0,
   Always = 1,
@@ -19,7 +62,6 @@ export enum OWLogLevel {
 }
 
 export enum HealthDataType {
-  // Activity & Mobility
   Steps = "steps",
   DistanceWalkingRunning = "distanceWalkingRunning",
   DistanceCycling = "distanceCycling",
@@ -31,16 +73,12 @@ export enum HealthDataType {
   SixMinuteWalkTestDistance = "sixMinuteWalkTestDistance",
   ActiveEnergy = "activeEnergy",
   BasalEnergy = "basalEnergy",
-
-  // Heart & Cardiovascular
   HeartRate = "heartRate",
   RestingHeartRate = "restingHeartRate",
   HeartRateVariabilitySDNN = "heartRateVariabilitySDNN",
   Vo2Max = "vo2Max",
   OxygenSaturation = "oxygenSaturation",
   RespiratoryRate = "respiratoryRate",
-
-  // Body Measurements
   BodyMass = "bodyMass",
   Height = "height",
   Bmi = "bmi",
@@ -48,35 +86,23 @@ export enum HealthDataType {
   LeanBodyMass = "leanBodyMass",
   WaistCircumference = "waistCircumference",
   BodyTemperature = "bodyTemperature",
-
-  // Blood & Metabolic
   BloodGlucose = "bloodGlucose",
   InsulinDelivery = "insulinDelivery",
   BloodPressureSystolic = "bloodPressureSystolic",
   BloodPressureDiastolic = "bloodPressureDiastolic",
   BloodPressure = "bloodPressure",
-
-  // Sleep & Mindfulness
   Sleep = "sleep",
   MindfulSession = "mindfulSession",
-
-  // Reproductive Health
   MenstrualFlow = "menstrualFlow",
   CervicalMucusQuality = "cervicalMucusQuality",
   OvulationTestResult = "ovulationTestResult",
   SexualActivity = "sexualActivity",
-
-  // Nutrition
   DietaryEnergyConsumed = "dietaryEnergyConsumed",
   DietaryCarbohydrates = "dietaryCarbohydrates",
   DietaryProtein = "dietaryProtein",
   DietaryFatTotal = "dietaryFatTotal",
   DietaryWater = "dietaryWater",
-
-  // Workout
   Workout = "workout",
-
-  // Aliases
   RestingEnergy = "restingEnergy",
   BloodOxygen = "bloodOxygen",
 }
@@ -93,11 +119,13 @@ export type StoredCredentials = {
   refreshToken: string | null;
   apiKey: string | null;
   host: string | null;
-  /** Always null on iOS — the native SDK exposes no accessor for it yet. */
   customSyncUrl: string | null;
   isSyncActive: boolean;
-  /** `"apple"` on iOS; `"google"` or `"samsung"` on Android; null when none is selected. */
   provider: string | null;
+  /** Gutsy fork. */
+  authState?: OWAuthState;
+  /** Gutsy fork. */
+  hasRenewalCredential?: boolean;
 };
 
 export type SyncStatus = {
@@ -105,10 +133,7 @@ export type SyncStatus = {
   sentCount: number;
   completedTypes: number;
   isFullExport: boolean;
-  /** False while the initial full historical export is still pending or in progress. */
   initialExportDone: boolean;
-  /** True while a sync round is currently in flight. */
   isSyncing: boolean;
-  /** ISO8601 timestamp of the current sync session, or null when there is none. */
   createdAt: string | null;
 };

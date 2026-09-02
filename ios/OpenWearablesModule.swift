@@ -4,33 +4,46 @@ import OpenWearablesHealthSDK
 public class OpenWearablesModule: Module {
     public func definition() -> ModuleDefinition {
         Name("OpenWearablesHealthSDK")
-        
-        // MARK: - Callbacks (Events)        
-        Events("onLog", "onAuthError")
-        
-        // MARK: - Lifecycle        
+
+        // MARK: - Callbacks (Events)
+        Events("onLog", "onAuthError", "onAuthRecovered", "onAuthStateChanged")
+
+        // MARK: - Lifecycle
         OnCreate {
             OpenWearablesHealthSDK.shared.onLog = { message in
                 self.sendEvent("onLog", [
                     "message": message
                 ])
             }
-            
+
             OpenWearablesHealthSDK.shared.onAuthError = { statusCode, message in
                 self.sendEvent("onAuthError", [
                     "statusCode": statusCode,
                     "message": message
                 ])
             }
+
+            // Gutsy fork — the native recovery ladder reports back through these two.
+            OpenWearablesHealthSDK.shared.onAuthRecovered = { via in
+                self.sendEvent("onAuthRecovered", [
+                    "via": via
+                ])
+            }
+
+            OpenWearablesHealthSDK.shared.onAuthStateChanged = { state in
+                self.sendEvent("onAuthStateChanged", [
+                    "state": state
+                ])
+            }
         }
-        
-        // MARK: - Configure        
+
+        // MARK: - Configure
         Function("configure") { (host: String, customSyncURL: String?) in
-            // TODO: customSyncURL is dropped — the iOS SDK's configure(host:) takes no such parameter.
+            // customSyncURL is dropped — the iOS SDK's configure(host:) takes no such parameter.
             OpenWearablesHealthSDK.shared.configure(host: host)
         }
-        
-        // MARK: - Auth        
+
+        // MARK: - Auth
         AsyncFunction("signIn") { (
             userId: String,
             accessToken: String?,
@@ -46,70 +59,89 @@ public class OpenWearablesModule: Module {
             )
             promise.resolve()
         }
-        
+
         AsyncFunction("signOut") { (promise: Promise) in
             OpenWearablesHealthSDK.shared.signOut()
             promise.resolve()
         }
-        
-        Function("updateTokens") { (accessToken: String, refreshToken: String) in
+
+        Function("updateTokens") { (accessToken: String, refreshToken: String?) in
             OpenWearablesHealthSDK.shared.updateTokens(
                 accessToken: accessToken,
                 refreshToken: refreshToken
             )
         }
-        
-        Function("restoreSession") {
+
+        Function("restoreSession") { () -> String? in
             return OpenWearablesHealthSDK.shared.restoreSession()
         }
-        
-        Function("isSessionValid") {
+
+        Function("isSessionValid") { () -> Bool in
             return OpenWearablesHealthSDK.shared.isSessionValid
         }
-        
-        // MARK: - HealthKit Authorization        
+
+        // MARK: - Auth self-healing (Gutsy fork)
+        Function("setRenewalCredential") { (url: String, token: String) in
+            OpenWearablesHealthSDK.shared.setRenewalCredential(url: url, token: token)
+        }
+
+        Function("clearRenewalCredential") {
+            OpenWearablesHealthSDK.shared.clearRenewalCredential()
+        }
+
+        Function("getAuthState") { () -> [String: Any?] in
+            return OpenWearablesHealthSDK.shared.getAuthState()
+        }
+
+        AsyncFunction("ensureFreshSession") { (promise: Promise) in
+            OpenWearablesHealthSDK.shared.ensureFreshSession { outcome in
+                promise.resolve(outcome)
+            }
+        }
+
+        // MARK: - HealthKit Authorization
         AsyncFunction("requestAuthorization") { (types: [String], promise: Promise) in
             let healthTypes = types.compactMap { HealthDataType(rawValue: $0) }
             OpenWearablesHealthSDK.shared.requestAuthorization(types: healthTypes) { success in
                 promise.resolve(success)
             }
         }
-        
-        // MARK: - Sync    
+
+        // MARK: - Sync
         Function("setSyncInterval") { (minutes: Double) in } // (not implemented in iOS SDK)
-            
+
         AsyncFunction("startBackgroundSync") { (syncDaysBack: Int?, promise: Promise) in
             OpenWearablesHealthSDK.shared.startBackgroundSync(syncDaysBack: syncDaysBack) { started in
                 promise.resolve(started)
             }
         }
-        
+
         AsyncFunction("stopBackgroundSync") { (promise: Promise) in
             OpenWearablesHealthSDK.shared.stopBackgroundSync()
             promise.resolve()
         }
-        
+
         AsyncFunction("resumeSync") { (promise: Promise) in
             OpenWearablesHealthSDK.shared.resumeSync { resumed in
                 promise.resolve(resumed)
             }
         }
-        
-        Function("isSyncActive") {
+
+        Function("isSyncActive") { () -> Bool in
             return OpenWearablesHealthSDK.shared.isSyncActive
         }
-        
-        Function("getSyncStatus") {
+
+        Function("getSyncStatus") { () -> [String: Any] in
             return OpenWearablesHealthSDK.shared.getSyncStatus()
         }
-        
+
         Function("resetAnchors") {
             OpenWearablesHealthSDK.shared.resetAnchors()
         }
-        
-        Function("getStoredCredentials") {
+
+        Function("getStoredCredentials") { () -> [String: Any?] in
             var credentials = OpenWearablesHealthSDK.shared.getStoredCredentials()
-            // TODO: the iOS SDK exposes no accessor for customSyncUrl yet — null until the native SDK adds one.
+            // The iOS SDK exposes no accessor for customSyncUrl — null until the native SDK adds one.
             // updateValue(_:forKey:) stores a null; subscript assignment would delete the key instead.
             credentials.updateValue(nil, forKey: "customSyncUrl")
             credentials.updateValue("apple", forKey: "provider")
@@ -117,13 +149,13 @@ public class OpenWearablesModule: Module {
         }
 
         // MARK: - Providers (iOS has exactly one: HealthKit)
-        Function("getAvailableProviders") {
+        Function("getAvailableProviders") { () -> [[String: Any]] in
             return [
                 ["id": "apple", "displayName": "Apple Health", "isAvailable": true]
             ]
         }
 
-        Function("setProvider") { (providerId: String) in
+        Function("setProvider") { (providerId: String) -> Bool in
             return providerId == "apple"
         }
 
@@ -133,7 +165,7 @@ public class OpenWearablesModule: Module {
             OpenWearablesHealthSDK.shared.setLogLevel(level)
         }
 
-        Function("getLogLevel") {
+        Function("getLogLevel") { () -> Int in
             return OpenWearablesHealthSDK.shared.logLevel.rawValue
         }
     }
