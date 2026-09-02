@@ -101,20 +101,29 @@ public class OpenWearablesModule : Module() {
     }
 
     AsyncFunction("startBackgroundSync") Coroutine { syncDaysBack: Int? ->
-      return@Coroutine OpenWearablesHealthSDK.getInstance().startBackgroundSync(syncDaysBack)
+      // The native returns Unit and throws when it cannot start; iOS resolves false instead.
+      try {
+        OpenWearablesHealthSDK.getInstance().startBackgroundSync(syncDaysBack)
+        return@Coroutine true
+      } catch (e: IllegalStateException) {
+        sendEvent("onLog", mapOf("message" to "Cannot start sync: ${e.message}"))
+        return@Coroutine false
+      }
     }
 
     AsyncFunction("stopBackgroundSync") Coroutine { _: Unit? ->
       OpenWearablesHealthSDK.getInstance().stopBackgroundSync()
     }
 
-    AsyncFunction("syncNow") Coroutine { _: Unit? ->
-      OpenWearablesHealthSDK.getInstance().syncNow()
-    }
-
     AsyncFunction("resumeSync") Coroutine { _: Unit? ->
-      OpenWearablesHealthSDK.getInstance().resumeSync()
-      return@Coroutine true
+      // iOS resolves false when there is nothing to resume; the native here throws instead.
+      try {
+        OpenWearablesHealthSDK.getInstance().resumeSync()
+        return@Coroutine true
+      } catch (e: IllegalStateException) {
+        sendEvent("onLog", mapOf("message" to "Cannot resume sync: ${e.message}"))
+        return@Coroutine false
+      }
     }
 
     Function("isSyncActive") {
@@ -143,16 +152,15 @@ public class OpenWearablesModule : Module() {
     }
     
     // MARK: - Logs
-    Function("setLogLevel") { level: Int ->
-      val enumLevel = when (level) {
-        0 -> OWLogLevel.NONE
-        1 -> OWLogLevel.ALWAYS
-        2 -> OWLogLevel.DEBUG
-        else -> OWLogLevel.DEBUG
+    Function("setLogLevel") { levelId: Int ->
+      val level = OWLogLevel.entries.getOrElse(levelId) {
+          OWLogLevel.DEBUG
       }
-      OpenWearablesHealthSDK.getInstance().logLevel = enumLevel
+      OpenWearablesHealthSDK.getInstance().logLevel = level
     }
 
-    Function("getLogLevel") {  }
+    Function("getLogLevel") {
+      OpenWearablesHealthSDK.getInstance().logLevel.ordinal
+    }    
   }
 }
