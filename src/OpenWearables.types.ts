@@ -8,20 +8,24 @@ export type OpenWearablesModuleEvents = {
 };
 
 export type LogEventPayload = {
+  nativeConnectionGeneration: string;
   message: string;
 };
 
 export type AuthErrorEventPayload = {
+  nativeConnectionGeneration: string;
   statusCode: number;
   message: string;
 };
 
 export type AuthRecoveredEventPayload = {
+  nativeConnectionGeneration: string;
   /** "renewal" | "double-check" | "external" — which rung of the ladder repaired the session. */
   via: string;
 };
 
 export type AuthStateChangedEventPayload = {
+  nativeConnectionGeneration: string;
   state: OWAuthState;
 };
 
@@ -35,6 +39,7 @@ export type OWAuthState = "ok" | "recovering" | "reauth_required";
 
 /** Snapshot returned by `getAuthState()` — no network, safe to call at launch. */
 export type AuthStateSnapshot = {
+  deviceLeaseRejected: boolean;
   state: OWAuthState;
   lastAuthErrorAt: string | null;
   lastRecoveredAt: string | null;
