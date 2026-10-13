@@ -47,7 +47,7 @@ declare class OpenWearablesModule extends NativeModule<OpenWearablesModuleEvents
    * when the access token expires within 5 minutes and walks the native recovery ladder on
    * rejection. The ONLY sanctioned way for a host to "check" a single-use refresh token.
    */
-  ensureFreshSession(): Promise<EnsureSessionResult>;
+  ensureFreshSession(expectedGeneration?: string | null): Promise<EnsureSessionResult>;
 
   // MARK: - HealthKit / Health Connect Authorization
   requestAuthorization(types: HealthDataType[]): Promise<boolean>;

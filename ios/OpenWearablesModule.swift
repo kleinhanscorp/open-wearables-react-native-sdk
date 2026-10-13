@@ -109,8 +109,8 @@ public class OpenWearablesModule: Module {
             return OpenWearablesHealthSDK.shared.getAuthState()
         }
 
-        AsyncFunction("ensureFreshSession") { (promise: Promise) in
-            OpenWearablesHealthSDK.shared.ensureFreshSession { outcome in
+        AsyncFunction("ensureFreshSession") { (expectedGeneration: String?, promise: Promise) in
+            OpenWearablesHealthSDK.shared.ensureFreshSession(expectedGeneration: expectedGeneration) { outcome in
                 promise.resolve(outcome)
             }
         }
