@@ -125,8 +125,8 @@ public class OpenWearablesModule : Module() {
       OpenWearablesHealthSDK.getInstance().getAuthState()
     }
 
-    AsyncFunction("ensureFreshSession") Coroutine { _: Unit? ->
-      return@Coroutine OpenWearablesHealthSDK.getInstance().ensureFreshSession()
+    AsyncFunction("ensureFreshSession") Coroutine { expectedGeneration: String? ->
+      return@Coroutine OpenWearablesHealthSDK.getInstance().ensureFreshSession(expectedGeneration)
     }
 
     // MARK: - Authorization
