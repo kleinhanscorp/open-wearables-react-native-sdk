@@ -56,8 +56,8 @@ public class OpenWearablesModule: Module {
             OpenWearablesHealthSDK.shared.installConnection(expected: generation, userId: userId, access: access,
                 refresh: refresh, renewalUrl: renewalUrl, renewalToken: renewalToken, fresh: fresh, deviceGeneration: deviceGeneration)
         }
-        Function("signOutConnection") { (generation: String) -> Bool in
-            OpenWearablesHealthSDK.shared.signOutConnection(expected: generation)
+        AsyncFunction("signOutConnection") { (generation: String, promise: Promise) in
+            promise.resolve(OpenWearablesHealthSDK.shared.signOutConnection(expected: generation))
         }
 
         AsyncFunction("signIn") { (

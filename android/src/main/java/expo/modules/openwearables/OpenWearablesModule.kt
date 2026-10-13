@@ -80,8 +80,8 @@ public class OpenWearablesModule : Module() {
                                     renewalUrl: String?, renewalToken: String?, fresh: Boolean, deviceGeneration: String ->
       OpenWearablesHealthSDK.getInstance().installConnection(generation, userId, access, refresh, renewalUrl, renewalToken, fresh, deviceGeneration)
     }
-    Function("signOutConnection") { generation: String ->
-      OpenWearablesHealthSDK.getInstance().signOutConnection(generation)
+    AsyncFunction("signOutConnection") Coroutine { generation: String ->
+      return@Coroutine OpenWearablesHealthSDK.getInstance().signOutConnection(generation)
     }
 
     AsyncFunction("signIn") Coroutine { userId: String, accessToken: String?, refreshToken: String?, apiKey: String? ->

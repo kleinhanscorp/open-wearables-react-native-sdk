@@ -20,7 +20,7 @@ declare class OpenWearablesModule extends NativeModule<OpenWearablesModuleEvents
   deviceId(): string;
   installConnection(generation: string, userId: string, access: string, refresh: string,
     renewalUrl: string | null, renewalToken: string | null, fresh: boolean, deviceGeneration: string): string | null;
-  signOutConnection(generation: string): boolean;
+  signOutConnection(generation: string): Promise<boolean>;
   signIn(
     userId: string,
     accessToken: string | null,
