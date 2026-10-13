@@ -15,6 +15,12 @@ declare class OpenWearablesModule extends NativeModule<OpenWearablesModuleEvents
   configure(host: string, customSyncURL?: string): void;
 
   // MARK: - Auth
+  invalidateConnection(): string;
+  connectionGeneration(): string;
+  deviceId(): string;
+  installConnection(generation: string, userId: string, access: string, refresh: string,
+    renewalUrl: string | null, renewalToken: string | null, fresh: boolean, deviceGeneration: string): string | null;
+  signOutConnection(generation: string): boolean;
   signIn(
     userId: string,
     accessToken: string | null,

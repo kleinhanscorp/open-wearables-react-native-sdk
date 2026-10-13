@@ -114,6 +114,7 @@ export type HealthDataProvider = {
 };
 
 export type StoredCredentials = {
+  deviceConnectionGeneration?: string | null;
   userId: string | null;
   accessToken: string | null;
   refreshToken: string | null;

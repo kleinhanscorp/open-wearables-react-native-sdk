@@ -24,6 +24,7 @@ public class OpenWearablesModule : Module() {
         sendEvent(
           "onLog",
           mapOf(
+            "nativeConnectionGeneration" to OpenWearablesHealthSDK.getInstance().connectionGeneration(),
             "message" to message
           )
         )
@@ -34,6 +35,7 @@ public class OpenWearablesModule : Module() {
           "onAuthError",
           mapOf(
             "statusCode" to statusCode,
+            "nativeConnectionGeneration" to OpenWearablesHealthSDK.getInstance().connectionGeneration(),
             "message" to message
           )
         )
@@ -41,11 +43,11 @@ public class OpenWearablesModule : Module() {
 
       // Gutsy fork — the native recovery ladder reports back through these two.
       OpenWearablesHealthSDK.getInstance().authRecoveredListener = { via ->
-        sendEvent("onAuthRecovered", mapOf("via" to via))
+        sendEvent("onAuthRecovered", mapOf("via" to via, "nativeConnectionGeneration" to OpenWearablesHealthSDK.getInstance().connectionGeneration()))
       }
 
       OpenWearablesHealthSDK.getInstance().authStateListener = { state ->
-        sendEvent("onAuthStateChanged", mapOf("state" to state))
+        sendEvent("onAuthStateChanged", mapOf("state" to state, "nativeConnectionGeneration" to OpenWearablesHealthSDK.getInstance().connectionGeneration()))
       }
     }
 
@@ -71,6 +73,17 @@ public class OpenWearablesModule : Module() {
     }
 
     // MARK: - Auth
+    Function("invalidateConnection") { OpenWearablesHealthSDK.getInstance().invalidateConnection() }
+    Function("connectionGeneration") { OpenWearablesHealthSDK.getInstance().connectionGeneration() }
+    Function("deviceId") { OpenWearablesHealthSDK.getInstance().deviceId() }
+    Function("installConnection") { generation: String, userId: String, access: String, refresh: String,
+                                    renewalUrl: String?, renewalToken: String?, fresh: Boolean, deviceGeneration: String ->
+      OpenWearablesHealthSDK.getInstance().installConnection(generation, userId, access, refresh, renewalUrl, renewalToken, fresh, deviceGeneration)
+    }
+    Function("signOutConnection") { generation: String ->
+      OpenWearablesHealthSDK.getInstance().signOutConnection(generation)
+    }
+
     AsyncFunction("signIn") Coroutine { userId: String, accessToken: String?, refreshToken: String?, apiKey: String? ->
       OpenWearablesHealthSDK.getInstance().signIn(
         userId,

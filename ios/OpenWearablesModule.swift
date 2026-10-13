@@ -12,6 +12,7 @@ public class OpenWearablesModule: Module {
         OnCreate {
             OpenWearablesHealthSDK.shared.onLog = { message in
                 self.sendEvent("onLog", [
+                    "nativeConnectionGeneration": OpenWearablesHealthSDK.shared.connectionGeneration(),
                     "message": message
                 ])
             }
@@ -19,6 +20,7 @@ public class OpenWearablesModule: Module {
             OpenWearablesHealthSDK.shared.onAuthError = { statusCode, message in
                 self.sendEvent("onAuthError", [
                     "statusCode": statusCode,
+                    "nativeConnectionGeneration": OpenWearablesHealthSDK.shared.connectionGeneration(),
                     "message": message
                 ])
             }
@@ -26,12 +28,14 @@ public class OpenWearablesModule: Module {
             // Gutsy fork — the native recovery ladder reports back through these two.
             OpenWearablesHealthSDK.shared.onAuthRecovered = { via in
                 self.sendEvent("onAuthRecovered", [
+                    "nativeConnectionGeneration": OpenWearablesHealthSDK.shared.connectionGeneration(),
                     "via": via
                 ])
             }
 
             OpenWearablesHealthSDK.shared.onAuthStateChanged = { state in
                 self.sendEvent("onAuthStateChanged", [
+                    "nativeConnectionGeneration": OpenWearablesHealthSDK.shared.connectionGeneration(),
                     "state": state
                 ])
             }
@@ -44,6 +48,18 @@ public class OpenWearablesModule: Module {
         }
 
         // MARK: - Auth
+        Function("invalidateConnection") { OpenWearablesHealthSDK.shared.invalidateConnection() }
+        Function("connectionGeneration") { OpenWearablesHealthSDK.shared.connectionGeneration() }
+        Function("deviceId") { OpenWearablesHealthSDK.shared.deviceId() }
+        Function("installConnection") { (generation: String, userId: String, access: String, refresh: String,
+                                         renewalUrl: String?, renewalToken: String?, fresh: Bool, deviceGeneration: String) -> String? in
+            OpenWearablesHealthSDK.shared.installConnection(expected: generation, userId: userId, access: access,
+                refresh: refresh, renewalUrl: renewalUrl, renewalToken: renewalToken, fresh: fresh, deviceGeneration: deviceGeneration)
+        }
+        Function("signOutConnection") { (generation: String) -> Bool in
+            OpenWearablesHealthSDK.shared.signOutConnection(expected: generation)
+        }
+
         AsyncFunction("signIn") { (
             userId: String,
             accessToken: String?,
